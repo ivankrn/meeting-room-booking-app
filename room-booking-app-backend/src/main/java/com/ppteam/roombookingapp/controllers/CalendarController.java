@@ -29,13 +29,27 @@ public class CalendarController {
     @GetMapping("/getTest")
     public ResponseEntity<String> getTest(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.split(" ")[1];
-        return new ResponseEntity<String>(getProfileDataFromGraph(token), HttpStatus.OK);
+        return new ResponseEntity<String>(getCalendarDataFromGraph(token), HttpStatus.OK);
     }
 
     private static String getProfileDataFromGraph(String accessToken) {
-        String GRAPH_URL = "https://graph.microsoft.com/v1.0/me";
+        String graphUrl = "https://graph.microsoft.com/v1.0/me/";
+        return getDataFromGraph(accessToken, graphUrl);
+    }
+
+    private static String getEventsDataFromGraph(String accessToken) {
+        String graphUrl = "https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,attendees,start,end,location";
+        return getDataFromGraph(accessToken, graphUrl);
+    }
+
+    private static String getCalendarDataFromGraph(String accessToken) {
+        String graphUrl = "https://graph.microsoft.com/v1.0/me/calendars/AQMkADAwATM0MDAAMS1lMmIwLWYwMzgtMDACLTAwCgBGAAADf0_304dHwUaczW1q4kHxBgcAoWjADDijxECWkr58J8U3zgAAAgEGAAAAoWjADDijxECWkr58J8U3zgAEE87dvQAAAA==/events";
+        return getDataFromGraph(accessToken, graphUrl);
+    }
+
+    private static String getDataFromGraph(String accessToken, String graphUrl) {
         try {
-            URL url = new URL(GRAPH_URL);
+            URL url = new URL(graphUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("GET");

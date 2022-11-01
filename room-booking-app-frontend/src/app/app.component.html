@@ -1,14 +1,11 @@
-<button (click)="login()" *ngIf="!isLoggedIn()">Log in</button>
-<button (click)="logout()" *ngIf="isLoggedIn()">Log out</button>
-<a routerLink="public-page">Go to public page</a>
-<a routerLink="restricted-page" *ngIf="isLoggedIn()">Go to restricted page</a>
+<button (click)="login()" *ngIf="!isLoggedIn()">Войти в аккаунт</button>
+<button (click)="logout()" *ngIf="isLoggedIn()">Выйти из аккаунта</button>
 <button (click)="printDebug()">Print debug</button>
 <div>
-  <h3>Logged in: {{isLoggedIn()}}</h3>
+  <h3>Авторизирован: {{isLoggedIn()}}</h3>
 </div>
 <div *ngIf="isLoggedIn()">
   <button (click)="callProfile()">Call profile</button>
-  <button (click)="callEvents()">Call events</button>
-  <p>Api response: {{ apiResponse }}</p>
+  <button (click)="callEvents()">Обновить расписание</button>
 </div>
 <router-outlet></router-outlet>

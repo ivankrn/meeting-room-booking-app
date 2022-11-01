@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { MsalService } from '@azure/msal-angular';
+import { Router } from '@angular/router';
+
+import { CalendarEvent } from 'angular-calendar';
+import { EventsService } from './services/events.service';
 
 @Component({
   selector: 'app-root',
@@ -9,9 +13,12 @@ import { MsalService } from '@azure/msal-angular';
 })
 export class AppComponent implements OnInit {
   title = 'room-booking-app';
-  apiResponse: string;
 
-  constructor(private msalService: MsalService, private httpClient: HttpClient) {
+  constructor(
+    private msalService: MsalService, 
+    private httpClient: HttpClient, 
+    private eventsService: EventsService, 
+    private router: Router) {
   }
 
   ngOnInit(): void {
@@ -20,6 +27,7 @@ export class AppComponent implements OnInit {
         if (res != null && res.account != null) {
           this.msalService.instance.setActiveAccount(res.account);
         }
+        this.router.navigate(["/schedule"]);
       }
     )
   }
@@ -42,13 +50,32 @@ export class AppComponent implements OnInit {
 
   callProfile() {
     this.httpClient.get('https://graph.microsoft.com/v1.0/me').subscribe( response => {
-      this.apiResponse = JSON.stringify(response);
+      console.log(JSON.stringify(response));
     } )
   }
 
+  // callEvents() {
+  //   this.httpClient.get('https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,start,end')
+  //   .subscribe( response => this.apiResponse = JSON.stringify(response) );
+  // }
   callEvents() {
     this.httpClient.get('https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,start,end')
-    .subscribe( response => this.apiResponse = JSON.stringify(response) );
+    .subscribe( response => this.processEventsResponse(response) );
+  }
+
+  processEventsResponse(response) {
+    const rawEvents: [] = response.value;
+    this.eventsService.events.length = 0;
+    rawEvents.forEach(rawEvent => {
+      const calendarEvent: CalendarEvent = {
+        title: rawEvent['subject'],
+        start: new Date(rawEvent['start']['dateTime'] + 'Z'),
+        end: new Date(rawEvent['end']['dateTime'] + 'Z')
+      };
+      this.eventsService.events.push(calendarEvent);
+    });
+    console.log(this.eventsService.events);
+    this.eventsService.updated.next();
   }
 
   callEcho() {

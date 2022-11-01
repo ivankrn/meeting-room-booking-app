@@ -7,7 +7,16 @@ import { InteractionType, IPublicClientApplication, PublicClientApplication } fr
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { PublicPageComponent } from './components/public-page/public-page.component';
-import { RestrictedPageComponent } from './components/restricted-page/restricted-page.component';
+import { CalendarModule, DateAdapter } from 'angular-calendar';
+import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
+import { ScheduleComponent } from './components/schedule/schedule.component';
+import localeRu from '@angular/common/locales/ru';
+import { registerLocaleData } from '@angular/common';
+import { EventsService } from './services/events.service';
+import { CurrentMonthPipe } from './components/schedule/current-month.pipe';
+import { CurrentDayPipe } from './components/schedule/current-day.pipe';
+
+registerLocaleData(localeRu, 'ru');
 
 export function MSALInstanceFactory(): IPublicClientApplication {
   return new PublicClientApplication({
@@ -32,13 +41,16 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   declarations: [
     AppComponent,
     PublicPageComponent,
-    RestrictedPageComponent
+    ScheduleComponent,
+    CurrentMonthPipe,
+    CurrentDayPipe,
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     MsalModule,
-    HttpClientModule
+    HttpClientModule,
+    CalendarModule.forRoot({ provide: DateAdapter, useFactory: adapterFactory })
   ],
   providers: [
     {
@@ -54,7 +66,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
     {
       provide: MSAL_INTERCEPTOR_CONFIG,
       useFactory: MSALInterceptorConfigFactory
-    }
+    },
+    EventsService
   ],
   bootstrap: [AppComponent]
 })

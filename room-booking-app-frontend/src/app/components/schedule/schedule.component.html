@@ -1,23 +1,25 @@
 <button
  mwlCalendarPreviousView
  [(viewDate)]="viewDate"
- [view]="view" (click)="printDate()">
+ [view]="view">
  Назад
 </button>
 <button
  mwlCalendarToday
- [(viewDate)]="viewDate" (click)="printDate()">
+ [(viewDate)]="viewDate">
  Сегодня
 </button>
 <button
  mwlCalendarNextView
  [(viewDate)]="viewDate"
- [view]="view" (click)="printDate()">
+ [view]="view">
  Вперед
 </button>
 <button (click)="setView('month')">Месяц</button>
 <button (click)="setView('week')">Неделя</button>
 <button (click)="setView('day')">День</button>
+<button (click)="callEvents()">Обновить расписание</button>
+<button (click)="logout()">Выйти из аккаунта</button>
 <div [ngSwitch]="view">
     <div *ngSwitchCase="'month'">
         <h2>{{ viewDate | currentMonth:locale }}</h2>

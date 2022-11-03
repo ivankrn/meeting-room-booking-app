@@ -1,10 +1,9 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CalendarEvent, CalendarView, CalendarDateFormatter, DAYS_OF_WEEK } from 'angular-calendar';
 import { CustomDateFormatter } from './custom-date-formatter.provider';
-import { setHours, setMinutes } from 'date-fns';
-import { EventsService } from 'src/app/services/events.service';
 import { Subject } from 'rxjs';
-import { formatDate } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { MsalService } from '@azure/msal-angular';
 
 @Component({
   selector: 'app-schedule',
@@ -28,22 +27,13 @@ export class ScheduleComponent implements OnInit {
   dayStartHour: number = 6;
   dayEndHour: number = 18;
 
-  // events: CalendarEvent[] = [
-  //   {
-  //     title: "Some event",
-  //     start: setHours(setMinutes(new Date(), 0), 7),
-  //     end: setHours(setMinutes(new Date(), 45), 7)
-  //   },
-  // ]
-  events: CalendarEvent[];
-  updated: Subject<void>;
+  events: CalendarEvent[] = [];
+  updated: Subject<void> = new Subject<void>();
 
-  constructor(private eventsService: EventsService) {
-    this.events = this.eventsService.events;
-    this.updated = this.eventsService.updated;
-  }
+  constructor(private httpClient: HttpClient, private msalService: MsalService) {}
 
   ngOnInit(): void {
+    this.callEvents();
   }
 
   setView(view: string) {
@@ -63,8 +53,27 @@ export class ScheduleComponent implements OnInit {
     }
   }
 
-  printDate() {
-    console.log(this.viewDate);
+  callEvents() {
+    this.httpClient.get('https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,start,end')
+    .subscribe( response => this.processEventsResponse(response) );
   }
 
+  processEventsResponse(response) {
+    const rawEvents: [] = response.value;
+    this.events.length = 0;
+    rawEvents.forEach(rawEvent => {
+      const calendarEvent: CalendarEvent = {
+        title: rawEvent['subject'],
+        start: new Date(rawEvent['start']['dateTime'] + 'Z'),
+        end: new Date(rawEvent['end']['dateTime'] + 'Z')
+      };
+      this.events.push(calendarEvent);
+    });
+    console.log(this.events);
+    this.updated.next();
+  }
+
+  logout() {
+    this.msalService.logout();
+  }
 }

@@ -20,6 +20,8 @@
 <button (click)="setView('day')">День</button>
 <button (click)="callEvents()">Обновить расписание</button>
 <button (click)="logout()">Выйти из аккаунта</button>
+<button (click)="createSub()">Создать подписку</button>
+<button (click)="listSubs()">Список подписок</button>
 <div [ngSwitch]="view">
     <div *ngSwitchCase="'month'">
         <h2>{{ viewDate | currentMonth:locale }}</h2>

@@ -11,10 +11,10 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import localeRu from '@angular/common/locales/ru';
 import { registerLocaleData } from '@angular/common';
-import { EventsService } from './services/events.service';
 import { CurrentMonthPipe } from './components/schedule/current-month.pipe';
 import { CurrentDayPipe } from './components/schedule/current-day.pipe';
 import { LoginPageComponent } from './components/login-page/login-page.component';
+import { SocketIoModule, SocketIoConfig } from 'ngx-socket-io';
 
 registerLocaleData(localeRu, 'ru');
 
@@ -32,11 +32,14 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set('https://graph.microsoft.com/v1.0/me', ['user.read', 'calendars.read']);
   protectedResourceMap.set('http://localhost:8080/getTest', ['user.read', 'calendars.read']);
+  protectedResourceMap.set('https://graph.microsoft.com/v1.0/subscriptions', ['user.read', 'calendars.read']);
   return {
     interactionType: InteractionType.Popup,
     protectedResourceMap
   };
 }
+
+const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
 
 @NgModule({
   declarations: [
@@ -51,7 +54,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
     AppRoutingModule,
     MsalModule,
     HttpClientModule,
-    CalendarModule.forRoot({ provide: DateAdapter, useFactory: adapterFactory })
+    CalendarModule.forRoot({ provide: DateAdapter, useFactory: adapterFactory }),
+    SocketIoModule.forRoot(socketIoConfig),
   ],
   providers: [
     {
@@ -68,7 +72,6 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
       provide: MSAL_INTERCEPTOR_CONFIG,
       useFactory: MSALInterceptorConfigFactory
     },
-    EventsService,
     {
       provide: LOCALE_ID,
       useValue: "ru"

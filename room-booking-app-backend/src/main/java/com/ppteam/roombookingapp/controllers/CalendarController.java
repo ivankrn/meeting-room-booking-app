@@ -16,16 +16,6 @@ import java.net.URL;
 @RequestMapping("/")
 public class CalendarController {
 
-    @GetMapping("/hello")
-    public String sayHello() {
-        return "Hello, world!";
-    }
-
-    @PostMapping("/echo")
-    public void echo(@RequestBody String request) {
-        System.out.println(request);
-    }
-
     @GetMapping("/getTest")
     public ResponseEntity<String> getTest(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
         String token = authHeader.split(" ")[1];
@@ -38,7 +28,8 @@ public class CalendarController {
     }
 
     private static String getEventsDataFromGraph(String accessToken) {
-        String graphUrl = "https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,attendees,start,end,location";
+        //String graphUrl = "https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,attendees,start,end,location";
+        String graphUrl = "https://graph.microsoft.com/v1.0/users/1e44c7e14745c3dc/calendars/AQMkADAwATM0MDAAMS1lMmIwLWYwMzgtMDACLTAwCgBGAAADf0_304dHwUaczW1q4kHxBgcAoWjADDijxECWkr58J8U3zgAAAgEGAAAAoWjADDijxECWkr58J8U3zgAEITJXIQAAAA==/events?$select=subject,organizer,start,end";
         return getDataFromGraph(accessToken, graphUrl);
     }
 
@@ -78,4 +69,5 @@ public class CalendarController {
             return "Something went wrong.";
         }
     }
+
 }

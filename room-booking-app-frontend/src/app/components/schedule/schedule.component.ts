@@ -23,10 +23,12 @@ export class ScheduleComponent implements OnInit {
   view: CalendarView = CalendarView.Week;
   viewDate: Date = new Date();
 
+  currentTime = Date.now();
+
   locale: string = "ru";
   weekStartsOn: number = DAYS_OF_WEEK.MONDAY;
   dayStartHour: number = 6;
-  dayEndHour: number = 18;
+  dayEndHour: number = 20;
 
   events: CalendarEvent[] = [];
   updated: Subject<void> = new Subject<void>();

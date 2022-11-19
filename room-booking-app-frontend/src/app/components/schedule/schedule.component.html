@@ -1,58 +1,78 @@
-<button
- mwlCalendarPreviousView
- [(viewDate)]="viewDate"
- [view]="view">
- Назад
-</button>
-<button
- mwlCalendarToday
- [(viewDate)]="viewDate">
- Сегодня
-</button>
-<button
- mwlCalendarNextView
- [(viewDate)]="viewDate"
- [view]="view">
- Вперед
-</button>
-<button (click)="setView('month')">Месяц</button>
-<button (click)="setView('week')">Неделя</button>
-<button (click)="setView('day')">День</button>
-<button (click)="callEvents()">Обновить расписание</button>
-<button (click)="logout()">Выйти из аккаунта</button>
-<button (click)="createSub()">Создать подписку</button>
-<button (click)="listSubs()">Список подписок</button>
-<div [ngSwitch]="view">
-    <div *ngSwitchCase="'month'">
-        <h2>{{ viewDate | currentMonth:locale }}</h2>
-        <mwl-calendar-month-view
-            [viewDate]="viewDate"
-            [events]="events"
-            [refresh]="updated"
-            [weekStartsOn]="weekStartsOn"
-            [locale]="locale">
-        </mwl-calendar-month-view>
-    </div>
-    <div *ngSwitchCase="'week'">
-        <mwl-calendar-week-view  
-            [viewDate]="viewDate"
-            [events]="events"
-            [refresh]="updated"
-            [weekStartsOn]="weekStartsOn"
-            [dayStartHour]="dayStartHour"
-            [dayEndHour]="dayEndHour"
-            [locale]="locale">
-        </mwl-calendar-week-view>
-    </div>
-    <div *ngSwitchCase="'day'">
-        <h2>{{ viewDate | currentDay:locale }}</h2>
-        <mwl-calendar-day-view
-            [viewDate]="viewDate"
-            [events]="events"
-            [refresh]="updated"
-            [dayStartHour]="dayStartHour"
-            [dayEndHour]="dayEndHour"
-            [locale]="locale">
-        </mwl-calendar-day-view>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+<body style="height: 100%;">
+    <header class="flex">
+        <button aria-label="Меню" class="button-reset burger">
+            <span class="burger__line"></span>
+            <span class="burger__line"></span>
+            <span class="burger__line"></span>
+        </button>
+        <nav class="header__nav flex">
+            <button (click)="setView('day')"
+            mwlCalendarToday
+            [(viewDate)]="viewDate" class="button-reset header__button">
+            Сегодня
+            </button>
+            <button (click)="setView('week')" class="button-reset header__button">Неделя</button>
+            <button (click)="setView('month')" class="button-reset header__button">Месяц</button>
+            <button (click)="callEvents()" class="button-reset header__button">Обновить</button>
+            <button (click)="logout()" class="button-reset header__button">Выйти</button>
+        </nav>
+        <span class="header__time">{{ currentTime | date: "EEEE, d MMMM y" }}</span>
+    </header>
+    <main>
+        <span class="main__time">
+            {{ currentTime | date: "H:mm" }}
+        </span>
+        <div class="container">
+            <div class="main__title flex">
+                <button
+                  mwlCalendarPreviousView
+                  [(viewDate)]="viewDate"
+                  [view]="view" class="button-reset main__button">
+                </button>
+                <h1 class="main__title-title">{{ viewDate | currentDay:locale }}</h1>
+                <button
+                  mwlCalendarNextView
+                  [(viewDate)]="viewDate"
+                  [view]="view" class="button-reset main__button">
+                </button>
+            </div>
+            <div [ngSwitch]="view">
+              <div class="schedule">
+                <div *ngSwitchCase="'month'">
+                  <mwl-calendar-month-view
+                      [viewDate]="viewDate"
+                      [events]="events"
+                      [refresh]="updated"
+                      [weekStartsOn]="weekStartsOn"
+                      [locale]="locale">
+                  </mwl-calendar-month-view>
+              </div>
+              <div *ngSwitchCase="'week'">
+                  <mwl-calendar-week-view
+                      [viewDate]="viewDate"
+                      [events]="events"
+                      [refresh]="updated"
+                      [weekStartsOn]="weekStartsOn"
+                      [dayStartHour]="dayStartHour"
+                      [dayEndHour]="dayEndHour"
+                      [locale]="locale">
+                  </mwl-calendar-week-view>
+              </div>
+              <div *ngSwitchCase="'day'">
+                  <mwl-calendar-day-view
+                      [viewDate]="viewDate"
+                      [events]="events"
+                      [refresh]="updated"
+                      [dayStartHour]="dayStartHour"
+                      [dayEndHour]="dayEndHour"
+                      [locale]="locale">
+                  </mwl-calendar-day-view>
+              </div>
+              </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

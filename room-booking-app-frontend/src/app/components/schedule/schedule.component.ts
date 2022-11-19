@@ -1,10 +1,11 @@
 import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CalendarEvent, CalendarView, CalendarDateFormatter, DAYS_OF_WEEK } from 'angular-calendar';
 import { CustomDateFormatter } from './custom-date-formatter.provider';
-import { Subject } from 'rxjs';
+import { map, Observable, Subject } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { MsalService } from '@azure/msal-angular';
 import { Socket } from 'ngx-socket-io';
+import { SubscriptionInfo } from './subscription-info';
 
 @Component({
   selector: 'app-schedule',
@@ -28,6 +29,10 @@ export class ScheduleComponent implements OnInit {
   dayStartHour: number = 6;
   dayEndHour: number = 18;
 
+  static readonly handicapInSeconds = 3;
+  static readonly subscriptionDeltaTimeInMinutes = 1;
+  private currentSubscriptionInfo: SubscriptionInfo;
+
   events: CalendarEvent[] = [];
   updated: Subject<void> = new Subject<void>();
 
@@ -36,6 +41,8 @@ export class ScheduleComponent implements OnInit {
   ngOnInit(): void {
     this.callEvents();
     this.socket.on("schedule_update", () => this.callEvents());
+    this.createSub().subscribe(subInfo => this.currentSubscriptionInfo = subInfo);
+    setInterval( () => this.updateSub(this.currentSubscriptionInfo), ScheduleComponent.subscriptionDeltaTimeInMinutes * 60 * 1000 - ScheduleComponent.handicapInSeconds * 1000 )
   }
 
   setView(view: string) {
@@ -79,30 +86,50 @@ export class ScheduleComponent implements OnInit {
     this.msalService.logout();
   }
 
-  createSub() {
-    let now = new Date();
-    const deltaTimeInMinutes = 1;
-    now.setMinutes(now.getMinutes() + deltaTimeInMinutes);
-    now = new Date(now);
+  addDeltaTimeInMinutes(date: Date) : Date {
+    const newDate = new Date(date);
+    newDate.setMinutes(newDate.getMinutes() + ScheduleComponent.subscriptionDeltaTimeInMinutes);
+    return newDate;
+  }
+
+  createSub() : Observable<SubscriptionInfo> {
+    const expirationDate = this.addDeltaTimeInMinutes(new Date());
     const subscription = {
       changeType: "created, updated, deleted",
-      notificationUrl: "https://c13d-185-42-144-194.eu.ngrok.io/listen",
+      notificationUrl: "https://ba01-185-42-144-194.eu.ngrok.io/listen",
       resource: "me/events",
-      expirationDateTime: now.toISOString()
+      expirationDateTime: expirationDate.toISOString()
     };
-    this.httpClient.post("https://graph.microsoft.com/v1.0/subscriptions/", subscription)
+    return this.httpClient.post("https://graph.microsoft.com/v1.0/subscriptions/", subscription)
+    .pipe(map(response => {
+      const subscriptionInfo = {
+        subscriptionId: response['id'],
+        expirationDate: expirationDate
+      };
+      console.log(subscriptionInfo);
+      return subscriptionInfo;
+    }))
+  }
+
+  updateSub(oldSubscription: SubscriptionInfo) {
+    const newExpirationTime = this.addDeltaTimeInMinutes(oldSubscription['expirationDate']);
+    const subscription = {
+      expirationDateTime: newExpirationTime.toISOString()
+    }
+    this.httpClient.patch("https://graph.microsoft.com/v1.0/subscriptions/" + oldSubscription['subscriptionId'], subscription)
     .subscribe(response => {
+      console.log("Updated");
       console.log(response);
-      setTimeout(() => this.notifyAboutSubDeactivation(), deltaTimeInMinutes * 60 * 1000);
+      const subscriptionInfo = {
+        subscriptionId: response['id'],
+        expirationDate: newExpirationTime
+      };
+      this.currentSubscriptionInfo = subscriptionInfo;
     });
   }
 
   listSubs() {
     this.httpClient.get("https://graph.microsoft.com/v1.0/subscriptions/").subscribe(r => console.log(r));
-  }
-
-  notifyAboutSubDeactivation() {
-    this.httpClient.post("http://localhost:8080/deactivateSubscription", "").subscribe();
   }
 
 }

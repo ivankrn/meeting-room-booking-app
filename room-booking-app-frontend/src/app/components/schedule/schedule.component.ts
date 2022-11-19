@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CalendarEvent, CalendarView, CalendarDateFormatter, DAYS_OF_WEEK } from 'angular-calendar';
 import { CustomDateFormatter } from './custom-date-formatter.provider';
 import { map, Observable, Subject } from 'rxjs';
@@ -38,7 +38,12 @@ export class ScheduleComponent implements OnInit {
   events: CalendarEvent[] = [];
   updated: Subject<void> = new Subject<void>();
 
-  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket) {}
+  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket, private cdr: ChangeDetectorRef) {
+    setInterval(() => {
+      this.currentTime = Date.now();
+      this.cdr.detectChanges();
+    }, 60*1000);
+  }
 
   ngOnInit(): void {
     this.callEvents();

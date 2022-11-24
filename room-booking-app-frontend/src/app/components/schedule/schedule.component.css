@@ -184,7 +184,7 @@ header {
 }
 
 .schedule {
-  padding: 66px 22px 57px 55px;
+  padding: 66px 50px 57px 55px;
   background: #C0DDA7;
   mix-blend-mode: normal;
   border-radius: 75px;
@@ -258,24 +258,6 @@ height: 720px;
 overflow-x: auto;
 margin-top: 0px;
   overflow-x: hidden;
-}
-
-::-webkit-scrollbar {
-width: 50px;
-}
-
-::-webkit-scrollbar-track {
-background-color: #fff;
-  border-radius: 100px;
-  width: 50px;
-}
-
-::-webkit-scrollbar-thumb {
-  width: 40px;
-background: #7BAF5C;
-  border-radius: 100px;
-  border: 5px solid #fff;
-  height: 220px;
 }
 
 @media (max-height: 1065px) {
@@ -424,19 +406,6 @@ background: #7BAF5C;
   .header__button:not(:last-child) {
       margin-right: 10px;
   }
-
-  ::-webkit-scrollbar {
-      width: 40px;
-  }
-
-  ::-webkit-scrollbar-track {
-      width: 40px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-      width: 30px;
-      height: 200px;
-  }
 }
 
 @media (max-width: 768px) {
@@ -457,19 +426,6 @@ background: #7BAF5C;
   .main__button {
       width: 20px;
       height: 20px;
-  }
-
-  ::-webkit-scrollbar {
-      width: 30px;
-  }
-
-  ::-webkit-scrollbar-track {
-      width: 30px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-      width: 20px;
-      height: 150px;
   }
 
   .some-div {

@@ -2,3 +2,217 @@
 body {
     margin: 0;
 }
+
+.cal-month-view .cal-header {
+  background-color: #C0DDA7;
+}
+
+.cal-month-view .cal-header:hover {
+  background-color: #C0DDA7;
+  user-select: none;
+}
+
+.cal-month-view .cal-day-number {
+  font-weight: 250;
+  font-size: 48px;
+  line-height: 48px;
+  color: #000000;
+  margin-top: 10px;
+  margin-left: 10px;
+  float: left;
+  margin-bottom: 10px;
+  opacity: 1;
+}
+
+.cal-month-view .cal-day-cell.cal-weekend .cal-day-number {
+  color: #000000;
+}
+
+.cal-month-view .cal-day-cell.cal-today .cal-day-number {
+  font-size: 48px;
+  background: #C0DDA7;
+  border-radius: 100px;
+  padding: 0px 10px;
+}
+
+.cal-month-view .cal-day-cell.cal-out-month .cal-day-number {
+  opacity: 1;
+}
+
+.cal-month-view .cal-cell-top {
+  min-height: 12vh;
+  flex: 1;
+  background-color: #fff;
+}
+
+.cal-month-view .cal-day-cell.cal-today {
+  background-color: #fff;
+}
+
+.cal-month-view {
+  background-color: #C0DDA7;
+}
+
+.cal-month-view .cal-days .cal-cell-row:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+.cal-month-view .cal-day-cell:not(:last-child) {
+  margin-right: 10px;
+}
+
+.cal-month-view .cal-cell-row .cal-cell:hover {
+  background-color: #C0DDA7;
+}
+
+.cal-month-view .cal-cell-row:hover {
+  background-color: transparent;
+}
+
+.cal-month-view .cal-days .cal-cell-row {
+  border: none;
+}
+
+.cal-month-view .cal-days {
+  border: none;
+}
+
+.cal-month-view .cal-day-cell.cal-out-month .cal-cell-top{
+  background: #F5F8EF;
+}
+
+.cal-month-view .cal-cell-top:hover {
+  background-color: #E5EBDA;
+}
+
+.cal-week-view {
+  background-color: #C0DDA7;
+  border: none;
+  max-height: 66vh;
+  overflow: scroll;
+  overflow-x: hidden;
+  scrollbar-color: #000;
+  padding-right: 10px;
+}
+
+.cal-week-view::-webkit-scrollbar {
+  width: 50px;
+  background-color: aqua;
+  border-radius: 100px;
+}
+
+.cal-week-view::-webkit-scrollbar-track {
+  background-color: #fff;
+  border-radius: 100px;
+  width: 50px;
+}
+
+.cal-week-view::-webkit-scrollbar-thumb {
+  width: 40px;
+  background: #7BAF5C;
+  border-radius: 100px;
+  border: 5px solid #fff;
+  height: 220px;
+}
+
+.cal-after-hour-start {
+  display: none;
+}
+
+.cal-week-view .cal-hour:not(:last-child) .cal-hour-segment, .cal-week-view .cal-hour:last-child :not(:last-child) .cal-hour-segment {
+  border: none;
+  display: flex;
+}
+
+.cal-week-view .cal-hour-odd {
+  background: #F5F8EF;
+}
+
+.cal-week-view .cal-time-events .cal-day-columns:not(.cal-resize-active) .cal-hour-segment:hover {
+  background-color: #E5EBDA;
+}
+
+.cal-week-view .cal-hour .cal-after-hour-start {
+  background: #7BAF5C;
+  display: none;
+}
+
+mwl-calendar-week-view-hour-segment:nth-child(2) {
+  display: none;
+}
+
+mwl-calendar-week-view-hour-segment:nth-child(1) {
+  height: auto !important;
+}
+
+mwl-calendar-week-view-hour-segment:nth-child(1) .cal-hour-start {
+  height: 144px !important;
+}
+
+.cal-week-view .cal-time {
+  font-weight: 250 !important;
+  font-size: 48px;
+  line-height: 48px;
+  padding-left: 10px;
+  padding-top: 10px;
+  width: auto;
+  margin-right: 20px;
+}
+
+.cal-week-view .cal-time-events {
+  border: none;
+}
+
+.cal-week-view .cal-hour:not(:last-child) .cal-hour-segment, .cal-week-view .cal-hour:last-child :not(:last-child) .cal-hour-segment {
+  border: none;
+  display: flex;
+  background: #fff;
+  margin-right: 10px;
+}
+
+.cal-week-view .cal-hour-odd:not(:last-child) .cal-hour-segment, .cal-week-view .cal-hour-odd:last-child :not(:last-child) .cal-hour-segment {
+  background: #F5F8EF;
+}
+
+.cal-hour {
+  background: #C0DDA7;
+}
+
+.cal-week-view .cal-hour-odd {
+  background: none;
+}
+
+.cal-week-view .cal-day-headers, .cal-week-view .cal-day-headers .cal-header:not(:last-child) {
+  border: none;
+  margin-right: 10px;
+  user-select: none;
+  font-style: 22px;
+}
+
+.cal-week-view .cal-header.cal-today {
+  background-color: #7BAF5C;
+}
+
+.cal-week-view .cal-day-headers .cal-header:hover {
+  background: transparent;
+}
+
+.cal-week-view .cal-header.cal-today:hover {
+  background-color: #7BAF5C;
+}
+
+.cal-week-view .cal-day-headers {
+  padding-left: 186px;
+}
+
+.cal-week-view .cal-time-label-column {
+  width: auto;
+}
+
+.cal-week-view .cal-header.cal-weekend span {
+  color: inherit;
+}
+
+.cal-week-view .cal-current-time-marker {
+  background-color: transparent;
+}

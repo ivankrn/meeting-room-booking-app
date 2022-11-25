@@ -82,7 +82,10 @@ export class ScheduleComponent implements OnInit {
       const calendarEvent: CalendarEvent = {
         title: rawEvent['subject'],
         start: new Date(rawEvent['start']['dateTime'] + 'Z'),
-        end: new Date(rawEvent['end']['dateTime'] + 'Z')
+        end: new Date(rawEvent['end']['dateTime'] + 'Z'),
+        meta: {
+          organizer: rawEvent['organizer']['emailAddress']['name'],
+        },
       };
       this.events.push(calendarEvent);
     });

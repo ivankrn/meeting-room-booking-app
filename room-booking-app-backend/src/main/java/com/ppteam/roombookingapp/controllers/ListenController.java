@@ -1,11 +1,7 @@
 package com.ppteam.roombookingapp.controllers;
 
-import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.corundumstudio.socketio.listener.ConnectListener;
-import com.corundumstudio.socketio.listener.DisconnectListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,27 +17,26 @@ public class ListenController {
     @Autowired
     public ListenController(SocketIOServer socketIOServer) {
         this.socketIOServer = socketIOServer;
-        System.out.println(socketIOServer.getAllClients().isEmpty());
-        this.socketIOServer.addConnectListener(new ConnectListener() {
-            @Override
-            public void onConnect(SocketIOClient socketIOClient) {
-                System.out.println("Connected client id: " + socketIOClient.getSessionId());
-            }
-        });
-        this.socketIOServer.addDisconnectListener(new DisconnectListener() {
-            @Override
-            public void onDisconnect(SocketIOClient socketIOClient) {
-                System.out.println("Disconnected client id: " + socketIOClient.getSessionId());
-            }
-        });
     }
 
+    /**
+     * Обрабатывает первичный запрос валидации, отправляемый Microsoft Graph при создании подписки.
+     *
+     * @param validationToken Токен валидации запроса
+     * @return 200 OK ответ сервера с токеном валидации в теле ответа
+     */
     @PostMapping(value = "/listen", headers = {"content-type=text/plain"})
     @ResponseBody
     public ResponseEntity<String> handleValidation(@RequestParam(value = "validationToken") String validationToken) {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(validationToken);
     }
 
+    /**
+     * Обрабатывает входящие уведомления Microsoft Graph об изменении расписания Outlook.
+     *
+     * @param jsonPayload Тело запроса
+     * @return 202 Accepted ответ сервера
+     */
     @PostMapping("/listen")
     public CompletableFuture<ResponseEntity<String>> handleNotification(@RequestBody String jsonPayload) {
         this.socketIOServer.getBroadcastOperations().sendEvent("schedule_update");

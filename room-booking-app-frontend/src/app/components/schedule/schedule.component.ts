@@ -21,7 +21,14 @@ import { SubscriptionInfo } from './subscription-info';
 })
 export class ScheduleComponent implements OnInit {
 
+  /**
+   * Временной диапазон для отображения расписания.
+   */
   view: CalendarView = CalendarView.Week;
+  
+  /**
+   * Дата для отображения расписания.
+   */
   viewDate: Date = new Date();
 
   currentTime = Date.now();
@@ -31,8 +38,12 @@ export class ScheduleComponent implements OnInit {
   dayStartHour: number = 6;
   dayEndHour: number = 20;
 
+  /**
+   * Разность между интервалом продления подписки и временем истечения подписки (необходима для того, чтобы запрос на продление подписки
+   * успевал обработаться до истечения существующей подписки).
+   */
   static readonly handicapInSeconds = 3;
-  static readonly subscriptionDeltaTimeInMinutes = 1;
+  static readonly subscriptionLifetimeInMinutes = 1;
   private currentSubscriptionInfo: SubscriptionInfo;
 
   events: CalendarEvent[] = [];
@@ -49,9 +60,14 @@ export class ScheduleComponent implements OnInit {
     this.callEvents();
     this.socket.on("schedule_update", () => this.callEvents());
     this.createSub().subscribe(subInfo => this.currentSubscriptionInfo = subInfo);
-    setInterval( () => this.updateSub(this.currentSubscriptionInfo), ScheduleComponent.subscriptionDeltaTimeInMinutes * 60 * 1000 - ScheduleComponent.handicapInSeconds * 1000 )
+    setInterval( () => this.updateSub(this.currentSubscriptionInfo), ScheduleComponent.subscriptionLifetimeInMinutes * 60 * 1000 - ScheduleComponent.handicapInSeconds * 1000 )
   }
 
+  /**
+   * Меняет текущий временной диапазон календаря.
+   * 
+   * @param view - Временной диапазон, который необходимо отобразить
+   */
   setView(view: string) {
     switch (view) {
       case "month": {
@@ -69,12 +85,21 @@ export class ScheduleComponent implements OnInit {
     }
   }
 
+  /**
+   * Запрашивает список событий из календаря Outlook и по получении обрабатывает их.
+   */
   callEvents() {
     this.httpClient.get('https://graph.microsoft.com/v1.0/me/events?$select=subject,organizer,start,end')
     .subscribe( response => this.processEventsResponse(response) );
   }
 
 
+  /**
+   * Преобразовывает ответ с полученными событиями из Outlook в нужный формат и сохраняет их, после
+   * чего обновляет текущее расписание на экране.
+   * 
+   * @param response - Ответ от Microsoft Graph с событиями из Outlook
+   */
   processEventsResponse(response) {
     const rawEvents: [] = response.value;
     this.events.length = 0;
@@ -92,18 +117,33 @@ export class ScheduleComponent implements OnInit {
     this.updated.next();
   }
 
+  /**
+   * Выполняет выход пользователя из аккаунта.
+   */
   logout() {
     this.msalService.logout();
   }
 
-  addDeltaTimeInMinutes(date: Date) : Date {
+  /**
+   * Добавляет к дате время жизни подписки в минутах.
+   * 
+   * @param date - Дата, к которой необходимо добавить минуты.
+   * @param deltaInMinutes - Количество минут, которое необходимо добавить.
+   * @returns Дата с добавленным количеством минут.
+   */
+  addDeltaTimeInMinutes(date: Date, deltaInMinutes: number) : Date {
     const newDate = new Date(date);
-    newDate.setMinutes(newDate.getMinutes() + ScheduleComponent.subscriptionDeltaTimeInMinutes);
+    newDate.setMinutes(newDate.getMinutes() + deltaInMinutes);
     return newDate;
   }
 
+  /**
+   * Создаёт подписку и возвращает информацию о ней, включая её id и дату окончания срока действия.
+   * 
+   * @returns Информация о созданной подписке
+   */
   createSub() : Observable<SubscriptionInfo> {
-    const expirationDate = this.addDeltaTimeInMinutes(new Date());
+    const expirationDate = this.addDeltaTimeInMinutes(new Date(), ScheduleComponent.subscriptionLifetimeInMinutes);
     const subscription = {
       changeType: "created, updated, deleted",
       notificationUrl: "https://ba01-185-42-144-194.eu.ngrok.io/listen",
@@ -116,20 +156,25 @@ export class ScheduleComponent implements OnInit {
         subscriptionId: response['id'],
         expirationDate: expirationDate
       };
-      console.log(subscriptionInfo);
+      // console.log(subscriptionInfo);
       return subscriptionInfo;
     }))
   }
 
-  updateSub(oldSubscription: SubscriptionInfo) {
-    const newExpirationTime = this.addDeltaTimeInMinutes(oldSubscription['expirationDate']);
+  /**
+   * Продлевает старую подписку и обновляет информацию о текущей подписке.
+   * 
+   * @param oldSubscriptionInfo Информация старой подписки
+   */
+  updateSub(oldSubscriptionInfo: SubscriptionInfo) {
+    const newExpirationTime = this.addDeltaTimeInMinutes(oldSubscriptionInfo['expirationDate'], ScheduleComponent.subscriptionLifetimeInMinutes);
     const subscription = {
       expirationDateTime: newExpirationTime.toISOString()
     }
-    this.httpClient.patch("https://graph.microsoft.com/v1.0/subscriptions/" + oldSubscription['subscriptionId'], subscription)
+    this.httpClient.patch("https://graph.microsoft.com/v1.0/subscriptions/" + oldSubscriptionInfo['subscriptionId'], subscription)
     .subscribe(response => {
-      console.log("Updated");
-      console.log(response);
+      // console.log("Updated");
+      // console.log(response);
       const subscriptionInfo = {
         subscriptionId: response['id'],
         expirationDate: newExpirationTime

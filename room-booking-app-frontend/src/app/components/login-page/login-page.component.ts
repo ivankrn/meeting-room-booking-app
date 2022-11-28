@@ -29,10 +29,18 @@ export class LoginPageComponent implements OnInit {
     )
   }
 
+  /**
+   * Проверяет, авторизирован ли пользователь.
+   * 
+   * @returns true, если пользователь авторизирован, иначе false
+   */
   isLoggedIn(): boolean {
     return this.msalService.instance.getActiveAccount() != null;
   }
 
+  /**
+   * Осуществляет авторизацию пользователя, используя редирект для входа через аккаунт Microsoft.
+   */
   login() {
     this.msalService.loginRedirect();
   }

@@ -1,6 +1,6 @@
 /* You can add global styles to this file, and also import other style files */
 body {
-    margin: 0;
+  margin: 0;
 }
 
 .cal-month-view .cal-header {
@@ -128,8 +128,8 @@ body {
   background: #F5F8EF;
 }
 
-.cal-week-view .cal-time-events .cal-day-columns:not(.cal-resize-active) .cal-hour-segment:hover {
-  background-color: #E5EBDA;
+.cal-week-view .cal-time-events .cal-day-columns:not(.cal-resize-active) .cal-hour-segment:hover, .cal-after-hour-start:hover {
+  background-color: #E5EBDA !important;
 }
 
 .cal-week-view .cal-hour .cal-after-hour-start {
@@ -137,8 +137,12 @@ body {
   display: none;
 }
 
-mwl-calendar-week-view-hour-segment:nth-child(2) {
-  display: none;
+/* mwl-calendar-week-view-hour-segment:nth-child(2) {
+display: none;
+} */
+
+.cal-week-view .cal-hour-segment.cal-after-hour-start .cal-time {
+  display: inline;
 }
 
 mwl-calendar-week-view-hour-segment:nth-child(1) {
@@ -170,8 +174,8 @@ mwl-calendar-week-view-hour-segment:nth-child(1) .cal-hour-start {
   margin-right: 10px;
 }
 
-.cal-week-view .cal-hour-odd:not(:last-child) .cal-hour-segment, .cal-week-view .cal-hour-odd:last-child :not(:last-child) .cal-hour-segment {
-  background: #F5F8EF;
+.cal-after-hour-start {
+  background: #F5F8EF !important;
 }
 
 .cal-hour {
@@ -215,4 +219,12 @@ mwl-calendar-week-view-hour-segment:nth-child(1) .cal-hour-start {
 
 .cal-week-view .cal-current-time-marker {
   background-color: transparent;
+}
+
+.cal-after-hour-start, .cal-week-view mwl-calendar-week-view-hour-segment {
+  height: 144px !important;
+}
+
+.cal-week-view mwl-calendar-week-view-hour-segment, .cal-week-view .cal-hour-segment {
+  display: contents;
 }

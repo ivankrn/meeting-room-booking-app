@@ -11,10 +11,9 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { ScheduleComponent } from './components/schedule/schedule.component';
 import localeRu from '@angular/common/locales/ru';
 import { registerLocaleData } from '@angular/common';
-import { CurrentMonthPipe } from './components/schedule/current-month.pipe';
-import { CurrentDayPipe } from './components/schedule/current-day.pipe';
 import { LoginPageComponent } from './components/login-page/login-page.component';
 import { SocketIoModule, SocketIoConfig } from 'ngx-socket-io';
+import { CurrentViewDatePipe } from './components/schedule/current-view-date.pipe';
 
 registerLocaleData(localeRu, 'ru');
 
@@ -45,9 +44,8 @@ const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: 
   declarations: [
     AppComponent,
     ScheduleComponent,
-    CurrentMonthPipe,
-    CurrentDayPipe,
     LoginPageComponent,
+    CurrentViewDatePipe,
   ],
   imports: [
     BrowserModule,

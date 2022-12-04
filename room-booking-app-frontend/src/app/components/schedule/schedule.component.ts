@@ -44,6 +44,7 @@ export class ScheduleComponent implements OnInit {
    */
   static readonly handicapInSeconds = 3;
   static readonly subscriptionLifetimeInMinutes = 1;
+  static readonly backendNotificationHandlerUrl = "https://room-booking-app.run-eu-central1.goorm.io/listen";
   private currentSubscriptionInfo: SubscriptionInfo;
 
   events: CalendarEvent[] = [];
@@ -146,7 +147,7 @@ export class ScheduleComponent implements OnInit {
     const expirationDate = this.addDeltaTimeInMinutes(new Date(), ScheduleComponent.subscriptionLifetimeInMinutes);
     const subscription = {
       changeType: "created, updated, deleted",
-      notificationUrl: "https://ba01-185-42-144-194.eu.ngrok.io/listen",
+      notificationUrl: ScheduleComponent.backendNotificationHandlerUrl,
       resource: "me/events",
       expirationDateTime: expirationDate.toISOString()
     };
@@ -156,7 +157,7 @@ export class ScheduleComponent implements OnInit {
         subscriptionId: response['id'],
         expirationDate: expirationDate
       };
-      // console.log(subscriptionInfo);
+      console.log(subscriptionInfo);
       return subscriptionInfo;
     }))
   }
@@ -173,18 +174,12 @@ export class ScheduleComponent implements OnInit {
     }
     this.httpClient.patch("https://graph.microsoft.com/v1.0/subscriptions/" + oldSubscriptionInfo['subscriptionId'], subscription)
     .subscribe(response => {
-      // console.log("Updated");
-      // console.log(response);
       const subscriptionInfo = {
         subscriptionId: response['id'],
         expirationDate: newExpirationTime
       };
       this.currentSubscriptionInfo = subscriptionInfo;
     });
-  }
-
-  listSubs() {
-    this.httpClient.get("https://graph.microsoft.com/v1.0/subscriptions/").subscribe(r => console.log(r));
   }
 
 }

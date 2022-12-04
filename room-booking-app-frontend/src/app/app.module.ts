@@ -30,7 +30,6 @@ export function MSALInstanceFactory(): IPublicClientApplication {
 export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set('https://graph.microsoft.com/v1.0/me', ['user.read', 'calendars.read']);
-  protectedResourceMap.set('http://localhost:8080/getTest', ['user.read', 'calendars.read']);
   protectedResourceMap.set('https://graph.microsoft.com/v1.0/subscriptions', ['user.read', 'calendars.read']);
   return {
     interactionType: InteractionType.Popup,
@@ -38,7 +37,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   };
 }
 
-const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
+//const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
+const socketIoConfig: SocketIoConfig = { url: 'room-booking-app.run-eu-central1.goorm.io', options: {} };
 
 @NgModule({
   declarations: [

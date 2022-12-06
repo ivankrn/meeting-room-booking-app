@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en" style="height: 100%;">
 <body style="height: 100%;">
     <header class="flex">
@@ -16,6 +15,15 @@
             <button (click)="setView('week')" class="button-reset header__button">Неделя</button>
             <button (click)="setView('month')" class="button-reset header__button">Месяц</button>
             <button (click)="callEvents()" class="button-reset header__button">Обновить</button>
+            <ng-multiselect-dropdown class="calendar__dropdown"
+              #calendarDropdown
+              [settings]="dropdownSettings"
+              [data]="calendarsList"
+              [(ngModel)]="selectedCalendars"
+              (onSelect)="onDropdownSelect($event)"
+              (onDeSelect)="onDropdownDeselect($event)"
+            >
+            </ng-multiselect-dropdown>
             <button (click)="logout()" class="button-reset header__button">Выйти</button>
         </nav>
         <span class="header__time">{{ currentTime | date: "EEEE, d MMMM y" }}</span>

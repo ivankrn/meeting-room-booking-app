@@ -1,4 +1,4 @@
-import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { LOCALE_ID, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { MsalInterceptor, MsalInterceptorConfiguration, MsalModule, MsalService, MSAL_INSTANCE, MSAL_INTERCEPTOR_CONFIG } from '@azure/msal-angular';
@@ -14,6 +14,8 @@ import { registerLocaleData } from '@angular/common';
 import { LoginPageComponent } from './components/login-page/login-page.component';
 import { SocketIoModule, SocketIoConfig } from 'ngx-socket-io';
 import { CurrentViewDatePipe } from './components/schedule/current-view-date.pipe';
+import { FormsModule } from '@angular/forms';
+import { NgMultiSelectDropDownModule } from 'ng-multiselect-dropdown';
 
 registerLocaleData(localeRu, 'ru');
 
@@ -37,8 +39,8 @@ export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   };
 }
 
-//const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
-const socketIoConfig: SocketIoConfig = { url: 'room-booking-app.run-eu-central1.goorm.io', options: {} };
+const socketIoConfig: SocketIoConfig = { url: 'http://localhost:4444', options: {} };
+//const socketIoConfig: SocketIoConfig = { url: 'room-booking-app.run-eu-central1.goorm.io', options: {} };
 
 @NgModule({
   declarations: [
@@ -54,6 +56,8 @@ const socketIoConfig: SocketIoConfig = { url: 'room-booking-app.run-eu-central1.
     HttpClientModule,
     CalendarModule.forRoot({ provide: DateAdapter, useFactory: adapterFactory }),
     SocketIoModule.forRoot(socketIoConfig),
+    FormsModule,
+    NgMultiSelectDropDownModule.forRoot(),
   ],
   providers: [
     {

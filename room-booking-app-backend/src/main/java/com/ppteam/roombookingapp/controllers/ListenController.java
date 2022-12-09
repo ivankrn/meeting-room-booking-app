@@ -1,6 +1,7 @@
 package com.ppteam.roombookingapp.controllers;
 
 import com.corundumstudio.socketio.SocketIOServer;
+import com.google.gson.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,8 @@ import java.util.concurrent.CompletableFuture;
 @CrossOrigin(origins = "http://localhost:4200")
 public class ListenController {
 
+    @Autowired
+    private SubscriptionStoreService subscriptionStoreService;
     private final SocketIOServer socketIOServer;
 
     @Autowired
@@ -39,8 +42,21 @@ public class ListenController {
      */
     @PostMapping("/listen")
     public CompletableFuture<ResponseEntity<String>> handleNotification(@RequestBody String jsonPayload) {
-        this.socketIOServer.getBroadcastOperations().sendEvent("schedule_update");
+        JsonArray notifications = parseNotificationStringToJsonArray(jsonPayload);
+        if (notifications.isEmpty()) {
+            return CompletableFuture.completedFuture(ResponseEntity.noContent().build());
+        }
+        for (JsonElement notification : notifications) {
+            String subscriptionId = notification.getAsJsonObject().get("subscriptionId").getAsString();
+            String calApiId = SubscriptionStoreService.getCalendarApiIdFromResource(
+                    subscriptionStoreService.getSubscription(subscriptionId).resource);
+            this.socketIOServer.getRoomOperations(calApiId).sendEvent("schedule_update");
+        }
         return CompletableFuture.completedFuture(ResponseEntity.accepted().body(""));
+    }
+
+    private static JsonArray parseNotificationStringToJsonArray(String json) {
+        return JsonParser.parseString(json).getAsJsonObject().get("value").getAsJsonArray();
     }
 
 }

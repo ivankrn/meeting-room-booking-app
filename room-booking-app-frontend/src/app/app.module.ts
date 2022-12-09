@@ -32,7 +32,6 @@ export function MSALInstanceFactory(): IPublicClientApplication {
 export function MSALInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string>>();
   protectedResourceMap.set('https://graph.microsoft.com/v1.0/me', ['user.read', 'calendars.read']);
-  protectedResourceMap.set('https://graph.microsoft.com/v1.0/subscriptions', ['user.read', 'calendars.read']);
   return {
     interactionType: InteractionType.Popup,
     protectedResourceMap

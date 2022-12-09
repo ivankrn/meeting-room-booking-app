@@ -1,11 +1,10 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CalendarEvent, CalendarView, CalendarDateFormatter, DAYS_OF_WEEK } from 'angular-calendar';
 import { CustomDateFormatter } from './custom-date-formatter.provider';
-import { map, Observable, Subject, forkJoin, defaultIfEmpty } from 'rxjs';
+import { map, Subject, forkJoin, defaultIfEmpty } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { MsalService } from '@azure/msal-angular';
 import { Socket } from 'ngx-socket-io';
-import { SubscriptionInfo } from './subscription-info';
 import { IDropdownSettings } from 'ng-multiselect-dropdown';
 
 @Component({
@@ -45,9 +44,6 @@ export class ScheduleComponent implements OnInit {
    */
   static readonly handicapInSeconds = 3;
   static readonly subscriptionLifetimeInMinutes = 1;
-  static readonly backendNotificationHandlerUrl = "https://ffcf-185-42-144-194.eu.ngrok.io/listen";
-  //static readonly backendNotificationHandlerUrl = "https://room-booking-app.run-eu-central1.goorm.io/listen";
-  private readonly currentSubscriptions: Map<string, SubscriptionInfo> = new Map<string, SubscriptionInfo>();
 
   events: CalendarEvent[] = [];
   updated: Subject<void> = new Subject<void>();
@@ -59,6 +55,7 @@ export class ScheduleComponent implements OnInit {
     textField: 'cal_name',
     selectAllText: 'Выбрать все переговорные',
     unSelectAllText: 'Сбросить выделение',
+    noDataAvailablePlaceholderText: 'Загрузка...',
     itemsShowLimit: 3,
   };
   @ViewChild('calendarDropdown')
@@ -73,8 +70,23 @@ export class ScheduleComponent implements OnInit {
 
   ngOnInit(): void {
     this.callCalendars();
+    this.postToken();
     this.socket.on("schedule_update", () => this.callEvents());
-    setInterval(() => this.updateSubs(), ScheduleComponent.subscriptionLifetimeInMinutes * 60 * 1000 - ScheduleComponent.handicapInSeconds * 1000);
+    setInterval( () => this.postToken(), 5 * 60 * 1000 );
+  }
+
+  /**
+   * Обновляет токен доступа на сервере.
+   */
+  postToken() {
+    const accessTokenRequest = {
+      scopes: ["user.read", "calendars.read"],
+      account: this.msalService.instance.getActiveAccount(),
+      forceRefresh: true,
+    };
+    this.msalService.acquireTokenSilent(accessTokenRequest)
+    .pipe(map(authResult => this.httpClient.post("http://localhost:8080/token", authResult.accessToken).subscribe()))
+    .subscribe();
   }
 
   /**
@@ -111,7 +123,7 @@ export class ScheduleComponent implements OnInit {
       const destinationUrl = `https://graph.microsoft.com/v1.0/me/calendars/${calendarApiId}/events?$select=subject,organizer,start,end`;
       calendarsTasks.push(this.httpClient.get(destinationUrl).pipe(map(response => this.processEventsResponse(response))));
     });
-    forkJoin(calendarsTasks).pipe(defaultIfEmpty(null)).subscribe(() => {this.updated.next(); console.log(`After call: ${this.events.length}`)})
+    forkJoin(calendarsTasks).pipe(defaultIfEmpty(null)).subscribe(() => this.updated.next());
   }
 
   /**
@@ -159,85 +171,14 @@ export class ScheduleComponent implements OnInit {
     this.msalService.logout();
   }
 
-  /**
-   * Добавляет к дате время жизни подписки в минутах.
-   * 
-   * @param date - Дата, к которой необходимо добавить минуты.
-   * @param deltaInMinutes - Количество минут, которое необходимо добавить.
-   * @returns Дата с добавленным количеством минут.
-   */
-  addDeltaTimeInMinutes(date: Date, deltaInMinutes: number): Date {
-    const newDate = new Date(date);
-    newDate.setMinutes(newDate.getMinutes() + deltaInMinutes);
-    return newDate;
+  joinRoomByCalendarId(calApiId: string) {
+    this.socket.emit("join_calendar_room", calApiId);
   }
 
-  /**
-   * Создаёт подписку и возвращает информацию о ней.
-   * 
-   * @param calApiId ID календаря Microsoft Graph, на который мы хотим подписаться
-   * @returns Информация о созданной подписке
-   */
-  createSub(calApiId: string): Observable<SubscriptionInfo> {
-    const expirationDate = this.addDeltaTimeInMinutes(new Date(), ScheduleComponent.subscriptionLifetimeInMinutes);
-    const subscription = {
-      changeType: "created, updated, deleted",
-      notificationUrl: ScheduleComponent.backendNotificationHandlerUrl,
-      resource: `me/calendars/${calApiId}/events`,
-      expirationDateTime: expirationDate.toISOString()
-    };
-    return this.httpClient.post("https://graph.microsoft.com/v1.0/subscriptions/", subscription)
-      .pipe(map(response => {
-        const subscriptionInfo = {
-          subscriptionId: response['id'],
-          expirationDate: expirationDate,
-          resource: response['resource']
-        };
-        console.log(response);
-        return subscriptionInfo;
-      }))
+  leaveRoomByCalendarId(calApiId: string) {
+    this.socket.emit("leave_calendar_room", calApiId);
   }
 
-  /**
-   * Удаляет подписку.
-   * 
-   * @param subscriptionId ID подписки, которую требуется удалить
-   */
-  deleteSub(subscriptionId: string) {
-    this.httpClient.delete("https://graph.microsoft.com/v1.0/subscriptions/" + subscriptionId)
-      .subscribe(() => this.currentSubscriptions.delete(subscriptionId));
-  }
-
-  /**
-   * Продлевает старую подписку и обновляет информацию о ней.
-   * 
-   * @param oldSubscriptionInfo Информация старой подписки
-   */
-  updateSub(oldSubscriptionInfo: SubscriptionInfo) {
-    console.log(`Old sub expiration time: ${oldSubscriptionInfo.expirationDate}`);
-    const newExpirationTime = this.addDeltaTimeInMinutes(oldSubscriptionInfo.expirationDate, ScheduleComponent.subscriptionLifetimeInMinutes);
-    const subscription = {
-      expirationDateTime: newExpirationTime.toISOString()
-    }
-    this.httpClient.patch("https://graph.microsoft.com/v1.0/subscriptions/" + oldSubscriptionInfo.subscriptionId, subscription)
-      .subscribe(response => {
-        const subscriptionInfo = {
-          subscriptionId: response['id'],
-          expirationDate: newExpirationTime,
-          resource: response['resource']
-        };
-        this.currentSubscriptions.set(subscriptionInfo.subscriptionId, subscriptionInfo);
-      });
-  }
-
-  /**
-   * Обновляет все текущие подписки.
-   */
-  updateSubs() {
-    for (let subInfo of this.currentSubscriptions.values()) {
-      this.updateSub(subInfo);
-    }
-  }
 
   /**
    * Запрашивает Outlook календари пользователя, после чего обрабатывает их.
@@ -253,10 +194,15 @@ export class ScheduleComponent implements OnInit {
    * @param response Ответ от Microsoft Graph с календарями Outlook
    */
   processCalendarsResponse(response) {
+    console.log(response);
     const rawCalendars: [] = response.value;
     this.calendarsList.length = 0;
     for (let i = 0; i < response.value.length; i++) {
-      const calendar = { cal_id: i, cal_name: rawCalendars[i]['name'], cal_api_id: rawCalendars[i]['id'] };
+      let calendarName: string = rawCalendars[i]['name'];
+      if (rawCalendars[i]['isDefaultCalendar'] == true) {
+        calendarName = "Собственный календарь";
+      }
+      const calendar = { cal_id: i, cal_name: calendarName, cal_api_id: rawCalendars[i]['id'] };
       this.calendarsList.push(calendar);
     }
     this.calendarDropdownElement.data = this.calendarsList;
@@ -270,7 +216,7 @@ export class ScheduleComponent implements OnInit {
   onDropdownSelect(item) {
     this.callEvents();
     const calendarApiId = this.getSelectedCalendarApiId(item);
-    this.createSub(calendarApiId).subscribe(subInfo => this.currentSubscriptions.set(subInfo.subscriptionId, subInfo));
+    this.joinRoomByCalendarId(calendarApiId);
   }
 
   /**
@@ -281,11 +227,7 @@ export class ScheduleComponent implements OnInit {
   onDropdownDeselect(item) {
     this.callEvents();
     const calendarApiId = this.getSelectedCalendarApiId(item);
-    for (let subInfo of this.currentSubscriptions.values()) {
-      if (subInfo.resource == `me/calendars/${calendarApiId}/events`) {
-        this.deleteSub(subInfo.subscriptionId);
-      }
-    }
+    this.leaveRoomByCalendarId(calendarApiId);
   }
 
   /**

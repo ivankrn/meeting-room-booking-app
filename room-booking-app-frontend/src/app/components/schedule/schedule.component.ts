@@ -93,7 +93,13 @@ export class ScheduleComponent implements OnInit {
           this.updated.next();
         }
       }
-    })
+    });
+    this.socket.on("reconnect", () => {
+      this.selectedCalendars.forEach(cal => {
+        const calendarApiId = this.getSelectedCalendarApiId(cal);
+        this.joinRoomByCalendarId(calendarApiId);
+      });
+    });
     setInterval( () => this.postToken(), 5 * 60 * 1000 );
   }
 
@@ -194,10 +200,20 @@ export class ScheduleComponent implements OnInit {
     this.msalService.logout();
   }
 
+  /**
+   * Присоединяется к SocketIO комнате, соответствующей указанному ID календаря.
+   * 
+   * @param calApiId ID календаря Outlook
+   */
   joinRoomByCalendarId(calApiId: string) {
     this.socket.emit("join_calendar_room", calApiId);
   }
 
+    /**
+   * Отключается от SocketIO комнаты, соответствующей указанному ID календаря.
+   * 
+   * @param calApiId ID календаря Outlook
+   */
   leaveRoomByCalendarId(calApiId: string) {
     this.socket.emit("leave_calendar_room", calApiId);
   }

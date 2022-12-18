@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -101,8 +102,7 @@ public class SubscriptionController {
      */
     public void updateSubscription(String subscriptionId, GraphServiceClient graphClient) {
 
-        SubscriptionRecord oldSubscription = subscriptionStoreService.getSubscription(subscriptionId);
-        OffsetDateTime newExpirationDateTime = oldSubscription.expirationDateTime.plusMinutes(subscriptionLifetimeInMinutes);
+        OffsetDateTime newExpirationDateTime = OffsetDateTime.now(ZoneOffset.UTC).plusMinutes(subscriptionLifetimeInMinutes);
         Subscription subscriptionToUpdate = new Subscription();
         subscriptionToUpdate.expirationDateTime = newExpirationDateTime;
         graphClient.subscriptions(subscriptionId).buildRequest().patchAsync(subscriptionToUpdate).thenAccept(subscription -> {

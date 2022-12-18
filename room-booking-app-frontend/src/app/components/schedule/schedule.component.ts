@@ -57,7 +57,7 @@ export class ScheduleComponent implements OnInit {
     selectAllText: 'Выбрать все переговорные',
     unSelectAllText: 'Сбросить выделение',
     noDataAvailablePlaceholderText: 'Загрузка...',
-    itemsShowLimit: 0,
+    itemsShowLimit: 1,
   };
   @ViewChild('calendarDropdown')
   calendarDropdownElement;

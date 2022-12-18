@@ -17,6 +17,7 @@
             <button (click)="callEvents()" class="button-reset header__button">Обновить</button>
             <ng-multiselect-dropdown class="calendar__dropdown"
               #calendarDropdown
+              [placeholder]="dropdownSelectText"
               [settings]="dropdownSettings"
               [data]="calendarsList"
               [(ngModel)]="selectedCalendars"

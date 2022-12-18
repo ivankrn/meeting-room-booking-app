@@ -49,6 +49,7 @@ export class ScheduleComponent implements OnInit {
   updated: Subject<void> = new Subject<void>();
   calendarsList = [];
   selectedCalendars = [];
+  dropdownSelectText = "Выберите переговорные";
   dropdownSettings: IDropdownSettings = {
     singleSelection: false,
     idField: 'cal_id',
@@ -56,7 +57,7 @@ export class ScheduleComponent implements OnInit {
     selectAllText: 'Выбрать все переговорные',
     unSelectAllText: 'Сбросить выделение',
     noDataAvailablePlaceholderText: 'Загрузка...',
-    itemsShowLimit: 3,
+    itemsShowLimit: 0,
   };
   @ViewChild('calendarDropdown')
   calendarDropdownElement;
@@ -72,6 +73,27 @@ export class ScheduleComponent implements OnInit {
     this.callCalendars();
     this.postToken();
     this.socket.on("schedule_update", () => this.callEvents());
+    this.socket.on("add_event", e => {
+      const calendarEvent: CalendarEvent = {
+        id: e["id"],
+        title: e["subject"],
+        start: new Date(e["start"] + 'Z'),
+        end: new Date(e["end"] + "Z"),
+        meta: {
+          organizer: e["organizer"],
+        }
+      };
+      this.events.push(calendarEvent);
+      this.updated.next();
+    });
+    this.socket.on("delete_event", eventId => {
+      for (let i = 0; i < this.events.length; i++) {
+        if (this.events[i].id == eventId) {
+          this.events.splice(i, 1);
+          this.updated.next();
+        }
+      }
+    })
     setInterval( () => this.postToken(), 5 * 60 * 1000 );
   }
 
@@ -154,6 +176,7 @@ export class ScheduleComponent implements OnInit {
    */
   getCalendarEventFromRawEvent(rawEvent): CalendarEvent {
     const calendarEvent: CalendarEvent = {
+      id: rawEvent["id"],
       title: rawEvent['subject'],
       start: new Date(rawEvent['start']['dateTime'] + 'Z'),
       end: new Date(rawEvent['end']['dateTime'] + 'Z'),

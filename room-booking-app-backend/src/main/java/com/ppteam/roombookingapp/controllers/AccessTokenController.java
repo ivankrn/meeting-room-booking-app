@@ -14,6 +14,12 @@ public class AccessTokenController {
     @Autowired
     private AccessTokenService accessTokenService;
 
+    /**
+     * Сохраняет переданный токен доступа для дальнейшего использования.
+     *
+     * @param accessToken Токен доступа
+     * @return 200 OK ответ сервера
+     */
     @PostMapping("/token")
     public ResponseEntity<String> saveToken(@RequestBody String accessToken) {
         accessTokenService.setAccessToken(accessToken);

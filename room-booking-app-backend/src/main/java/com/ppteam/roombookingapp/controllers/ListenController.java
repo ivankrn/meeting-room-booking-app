@@ -2,11 +2,15 @@ package com.ppteam.roombookingapp.controllers;
 
 import com.corundumstudio.socketio.SocketIOServer;
 import com.google.gson.*;
+import com.microsoft.graph.http.GraphServiceException;
+import com.microsoft.graph.models.Event;
+import com.microsoft.graph.requests.GraphServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -15,6 +19,8 @@ public class ListenController {
 
     @Autowired
     private SubscriptionStoreService subscriptionStoreService;
+    @Autowired
+    private AccessTokenService accessTokenService;
     private final SocketIOServer socketIOServer;
 
     @Autowired
@@ -50,13 +56,48 @@ public class ListenController {
             String subscriptionId = notification.getAsJsonObject().get("subscriptionId").getAsString();
             String calApiId = SubscriptionStoreService.getCalendarApiIdFromResource(
                     subscriptionStoreService.getSubscription(subscriptionId).resource);
-            this.socketIOServer.getRoomOperations(calApiId).sendEvent("schedule_update");
+            String changeType = notification.getAsJsonObject().get("changeType").getAsString();
+            String resource = notification.getAsJsonObject().get("resource").getAsString();
+            if (Objects.equals(changeType, "created")) {
+                GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
+                graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
+                        .thenAccept(event -> {
+                                socketIOServer.getRoomOperations(calApiId)
+                                        .sendEvent("add_event", new NewEventNotification(event.id, event.subject, event.start,
+                                                event.end, event.organizer));
+                        });
+            } else if (Objects.equals(changeType, "updated")) {
+                GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
+                graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
+                        .whenComplete( (event, exception) -> {
+                            if (exception != null && exception.getCause() instanceof GraphServiceException) {
+                                if (Objects.equals(((GraphServiceException) exception.getCause()).getError().error.code,
+                                        "ErrorItemNotFound")) {
+                                    String eventId = resource.split("/")[3];
+                                    socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+                                }
+                            } else {
+                                socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", event.id);
+                                socketIOServer.getRoomOperations(calApiId)
+                                        .sendEvent("add_event", new NewEventNotification(event.id, event.subject, event.start,
+                                                event.end, event.organizer));
+                            }
+                        });
+            } else {
+                String eventId = resource.split("/")[3];
+                socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+            }
         }
         return CompletableFuture.completedFuture(ResponseEntity.accepted().body(""));
     }
 
+    /**
+     * Преобразует уведомление из строки Json в массив объектов Json.
+     *
+     * @param json Уведомление в виде строке Json
+     * @return Уведомление в виде массива объектов Json
+     */
     private static JsonArray parseNotificationStringToJsonArray(String json) {
         return JsonParser.parseString(json).getAsJsonObject().get("value").getAsJsonArray();
     }
-
 }

@@ -3,7 +3,9 @@ package com.ppteam.roombookingapp.controllers;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
+import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
+import com.corundumstudio.socketio.listener.DisconnectListener;
 import com.microsoft.graph.models.ChangeType;
 import com.microsoft.graph.models.Subscription;
 import com.microsoft.graph.requests.GraphServiceClient;
@@ -30,13 +32,27 @@ public class SubscriptionController {
     private SubscriptionStoreService subscriptionStoreService;
     @Autowired
     private AccessTokenService accessTokenService;
-    static final String notificationHost = "https://289f-185-42-144-194.eu.ngrok.io";
+    static final String notificationHost = "https://8ba5-185-42-144-194.eu.ngrok.io";
     static final int subscriptionLifetimeInMinutes = 1;
     static final int handicapInSeconds = 3;
     private final SocketIOServer socketIOServer;
 
     public SubscriptionController(SocketIOServer socketIOServer) {
         this.socketIOServer = socketIOServer;
+
+        this.socketIOServer.addConnectListener(new ConnectListener() {
+            @Override
+            public void onConnect(SocketIOClient socketIOClient) {
+                log.info("Клиент {} подключился", socketIOClient.getSessionId());
+            }
+        });
+        this.socketIOServer.addDisconnectListener(new DisconnectListener() {
+            @Override
+            public void onDisconnect(SocketIOClient socketIOClient) {
+                log.info("Клиент {} отключился", socketIOClient.getSessionId());
+            }
+        });
+
         this.socketIOServer.addEventListener("join_calendar_room", String.class, new DataListener<String>() {
             @Override
             public void onData(SocketIOClient client, String calApiId, AckRequest ackRequest) throws Exception {
@@ -54,10 +70,14 @@ public class SubscriptionController {
         });
     }
 
-    public CompletableFuture<ResponseEntity<String>> createSubForCalendarIfNotExists(@RequestBody String calendarApiId) {
+    /**
+     * Создает подписку для указанного ID календаря Outlook, если для данного ID не существует подписки.
+     *
+     * @param calendarApiId ID календаря Outlook
+     */
+    public void createSubForCalendarIfNotExists(String calendarApiId) {
         if (subscriptionStoreService.hasActiveSubscriptionForCalendarId(calendarApiId)) {
-            return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.NOT_MODIFIED)
-                    .body("Для данного календаря уже существует подписка."));
+            return;
         }
         GraphServiceClient graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
         Subscription subscriptionRequest = new Subscription();
@@ -67,13 +87,18 @@ public class SubscriptionController {
         subscriptionRequest.expirationDateTime = OffsetDateTime.now().plusMinutes(subscriptionLifetimeInMinutes);
         CompletableFuture<Subscription> subscriptionFuture =
                 graphClient.subscriptions().buildRequest().postAsync(subscriptionRequest);
-        return subscriptionFuture.thenApply(subscription -> {
+        subscriptionFuture.thenAccept(subscription -> {
             subscriptionStoreService.addSubscription(subscription.id, subscription.resource, subscription.expirationDateTime);
             log.info("Создана подписка: {} для ресурса: {}", subscription.id, subscription.resource);
-            return ResponseEntity.ok().body("");
         });
     }
 
+    /**
+     * Обновляет подписку для указанного ID календаря Outlook, используя переданный клиент Microsoft Graph.
+     *
+     * @param subscriptionId ID календаря Outlook
+     * @param graphClient Клиент Microsoft Graph
+     */
     public void updateSubscription(String subscriptionId, GraphServiceClient graphClient) {
 
         SubscriptionRecord oldSubscription = subscriptionStoreService.getSubscription(subscriptionId);
@@ -86,6 +111,9 @@ public class SubscriptionController {
         });
     }
 
+    /**
+     * Обновляет все подписки, удаляя те, чей календарь не просматривается каким-либо пользователем.
+     */
     @Scheduled(fixedRate = subscriptionLifetimeInMinutes * 60 * 1000 - handicapInSeconds * 1000)
     public void updateSubscriptions() {
         log.info("Начато обновление подписок");
@@ -97,14 +125,19 @@ public class SubscriptionController {
                 if (!socketIOServer.getRoomOperations(calendarApiId).getClients().isEmpty()) {
                     updateSubscription(subscription.subscriptionId, graphClient);
                 } else {
-                    deleteSubscription(calendarApiId);
+                    deleteSubscription(calendarApiId, graphClient);
                 }
             }
         }
     }
 
-    public void deleteSubscription(@RequestBody String calendarApiId) {
-        GraphServiceClient graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
+    /**
+     * Удаляет подписку для указанного ID календаря Outlook, используя переданный клиент Microsoft Graph.
+     *
+     * @param calendarApiId ID календаря Outlook
+     * @param graphClient Microsoft Graph клиент
+     */
+    public void deleteSubscription(String calendarApiId, GraphServiceClient graphClient) {
         List<SubscriptionRecord> subscriptions = subscriptionStoreService.getAllSubscriptions();
         String calendarAsResource = "me/calendars/" + calendarApiId + "/events";
         for (SubscriptionRecord subscription : subscriptions) {

@@ -31,8 +31,6 @@ export class ScheduleComponent implements OnInit {
    */
   viewDate: Date = new Date();
 
-  currentTime = Date.now();
-
   locale: string = "ru";
   weekStartsOn: number = DAYS_OF_WEEK.MONDAY;
   dayStartHour: number = 6;
@@ -62,11 +60,7 @@ export class ScheduleComponent implements OnInit {
   @ViewChild('calendarDropdown')
   calendarDropdownElement;
 
-  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket, private cdr: ChangeDetectorRef) {
-    setInterval(() => {
-      this.currentTime = Date.now();
-      this.cdr.detectChanges();
-    }, 60 * 1000);
+  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket) {
   }
 
   ngOnInit(): void {

@@ -27,12 +27,8 @@
             </ng-multiselect-dropdown>
             <button (click)="logout()" class="button-reset header__button">Выйти</button>
         </nav>
-        <span class="header__time">{{ currentTime | date: "EEEE, d MMMM y" }}</span>
     </header>
     <main>
-        <span class="main__time">
-            {{ currentTime | date: "H:mm" }}
-        </span>
         <div class="container">
             <div class="main__title flex">
                 <button

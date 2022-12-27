@@ -20,7 +20,7 @@ public class ListenController {
     @Autowired
     private SubscriptionStoreService subscriptionStoreService;
     @Autowired
-    private AccessTokenService accessTokenService;
+    private AccessTokenStoreService accessTokenStoreService;
     private final SocketIOServer socketIOServer;
 
     @Autowired
@@ -54,38 +54,45 @@ public class ListenController {
         }
         for (JsonElement notification : notifications) {
             String subscriptionId = notification.getAsJsonObject().get("subscriptionId").getAsString();
+            if (!subscriptionStoreService.hasSubscriptionWithId(subscriptionId)) {
+                continue;
+            }
             String calApiId = SubscriptionStoreService.getCalendarApiIdFromResource(
                     subscriptionStoreService.getSubscription(subscriptionId).resource);
             String changeType = notification.getAsJsonObject().get("changeType").getAsString();
             String resource = notification.getAsJsonObject().get("resource").getAsString();
-            if (Objects.equals(changeType, "created")) {
-                GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
-                graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
-                        .thenAccept(event -> {
+            String userId = resource.split("/")[1];
+            if (accessTokenStoreService.hasAccessTokenForUserId(userId)) {
+                if (Objects.equals(changeType, "created")) {
+                    GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(
+                            accessTokenStoreService.getAccessTokenByUserId(userId));
+                    graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
+                            .thenAccept(event -> {
                                 socketIOServer.getRoomOperations(calApiId)
-                                        .sendEvent("add_event", new NewEventNotification(event.id, event.subject, event.start,
-                                                event.end, event.organizer));
-                        });
-            } else if (Objects.equals(changeType, "updated")) {
-                GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(accessTokenService.getAccessToken());
-                graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
-                        .whenComplete( (event, exception) -> {
-                            if (exception != null && exception.getCause() instanceof GraphServiceException) {
-                                if (Objects.equals(((GraphServiceException) exception.getCause()).getError().error.code,
-                                        "ErrorItemNotFound")) {
-                                    String eventId = resource.split("/")[3];
-                                    socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+                                        .sendEvent("add_event", new NewEventNotification(event.id, event.subject,
+                                                event.start, event.end, event.organizer));
+                            });
+                } else if (Objects.equals(changeType, "updated")) {
+                    GraphServiceClient<okhttp3.Request> graphClient = GraphClientHelper.getGraphClient(
+                            accessTokenStoreService.getAccessTokenByUserId(userId));
+                    graphClient.customRequest("/" + resource + "/", Event.class).buildRequest().getAsync()
+                            .whenComplete((event, exception) -> {
+                                if (exception != null && exception.getCause() instanceof GraphServiceException) {
+                                    if (Objects.equals(((GraphServiceException) exception.getCause()).getError().error.code,
+                                            "ErrorItemNotFound")) {
+                                        String eventId = resource.split("/")[3];
+                                        socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+                                    }
+                                } else {
+                                    socketIOServer.getRoomOperations(calApiId)
+                                            .sendEvent("update_event", new NewEventNotification(event.id, event.subject,
+                                                    event.start, event.end, event.organizer));
                                 }
-                            } else {
-                                socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", event.id);
-                                socketIOServer.getRoomOperations(calApiId)
-                                        .sendEvent("add_event", new NewEventNotification(event.id, event.subject, event.start,
-                                                event.end, event.organizer));
-                            }
-                        });
-            } else {
-                String eventId = resource.split("/")[3];
-                socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+                            });
+                } else {
+                    String eventId = resource.split("/")[3];
+                    socketIOServer.getRoomOperations(calApiId).sendEvent("delete_event", eventId);
+                }
             }
         }
         return CompletableFuture.completedFuture(ResponseEntity.accepted().body(""));

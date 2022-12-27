@@ -19,12 +19,12 @@ public class SubscriptionStoreService {
      * @param resource Ресурс подписки
      * @param expirationDateTime Дата истечения подписки
      */
-    public void addSubscription(String id, String resource, OffsetDateTime expirationDateTime) {
+    public void addSubscription(String id, String resource, OffsetDateTime expirationDateTime, String userId) {
         if (subscriptions.containsKey(id)) {
             return;
         }
         SubscriptionRecord newRecord =
-                new SubscriptionRecord(id, resource, expirationDateTime);
+                new SubscriptionRecord(id, resource, expirationDateTime, userId);
         subscriptions.put(id, newRecord);
         String calendarApiId = getCalendarApiIdFromResource(resource);
         currentlyUsedCalendars.add(calendarApiId);
@@ -41,7 +41,7 @@ public class SubscriptionStoreService {
         if (subscriptions.containsKey(subscriptionId)) {
             SubscriptionRecord oldSubscription = subscriptions.get(subscriptionId);
             SubscriptionRecord newSubscription = new SubscriptionRecord(oldSubscription.subscriptionId,
-                    oldSubscription.resource, newExpirationDateTime);
+                    oldSubscription.resource, newExpirationDateTime, oldSubscription.userId);
             subscriptions.put(subscriptionId, newSubscription);
             return true;
         }
@@ -55,7 +55,7 @@ public class SubscriptionStoreService {
      * @return ID календаря Outlook
      */
     public static String getCalendarApiIdFromResource(String resource) {
-        return resource.split("/")[2];
+        return resource.split("/")[3];
     }
 
     /**
@@ -66,6 +66,16 @@ public class SubscriptionStoreService {
      */
     public SubscriptionRecord getSubscription(String subscriptionId) {
         return subscriptions.get(subscriptionId);
+    }
+
+    /**
+     * Возвращает true, если подписка с указанным ID существует, иначе false.
+     *
+     * @param subscriptionId ID подписки
+     * @return true, если подписка с указанным ID существует, иначе false
+     */
+    public boolean hasSubscriptionWithId(String subscriptionId) {
+        return subscriptions.containsKey(subscriptionId);
     }
 
     /**

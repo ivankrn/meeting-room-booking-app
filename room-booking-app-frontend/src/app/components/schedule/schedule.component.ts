@@ -36,12 +36,7 @@ export class ScheduleComponent implements OnInit {
   dayStartHour: number = 6;
   dayEndHour: number = 20;
 
-  /**
-   * Разность между интервалом продления подписки и временем истечения подписки (необходима для того, чтобы запрос на продление подписки
-   * успевал обработаться до истечения существующей подписки).
-   */
-  static readonly handicapInSeconds = 3;
-  static readonly subscriptionLifetimeInMinutes = 1;
+  static readonly backendNotificationHandlerUrl = "http://localhost:8080";
 
   events: CalendarEvent[] = [];
   updated: Subject<void> = new Subject<void>();
@@ -66,25 +61,25 @@ export class ScheduleComponent implements OnInit {
   ngOnInit(): void {
     this.callCalendars();
     this.postToken();
-    this.socket.on("schedule_update", () => this.callEvents());
     this.socket.on("add_event", e => {
-      const calendarEvent: CalendarEvent = {
-        id: e["id"],
-        title: e["subject"],
-        start: new Date(e["start"] + 'Z'),
-        end: new Date(e["end"] + "Z"),
-        meta: {
-          organizer: e["organizer"],
-        }
-      };
+      const calendarEvent: CalendarEvent = ScheduleComponent.getCalendarEventFromSocketNotification(e);
       this.events.push(calendarEvent);
-      this.updated.next();
+      this.updateEvents();
     });
+    this.socket.on("update_event", e => {
+      const calendarEvent: CalendarEvent = ScheduleComponent.getCalendarEventFromSocketNotification(e);
+      for (let i = 0; i < this.events.length; i++) {
+        if (this.events[i].id == calendarEvent.id) {
+          this.events[i] = calendarEvent;
+        }
+      }
+      this.updateEvents();
+    })
     this.socket.on("delete_event", eventId => {
       for (let i = 0; i < this.events.length; i++) {
         if (this.events[i].id == eventId) {
           this.events.splice(i, 1);
-          this.updated.next();
+          this.updateEvents();
         }
       }
     });
@@ -107,7 +102,8 @@ export class ScheduleComponent implements OnInit {
       forceRefresh: true,
     };
     this.msalService.acquireTokenSilent(accessTokenRequest)
-    .pipe(map(authResult => this.httpClient.post("http://localhost:8080/token", authResult.accessToken).subscribe()))
+    .pipe(map(authResult => this.httpClient.post(ScheduleComponent.backendNotificationHandlerUrl + "/token", 
+    {userId: authResult.account.localAccountId, accessToken: authResult.accessToken}).subscribe()))
     .subscribe();
   }
 
@@ -145,7 +141,7 @@ export class ScheduleComponent implements OnInit {
       const destinationUrl = `https://graph.microsoft.com/v1.0/me/calendars/${calendarApiId}/events?$select=subject,organizer,start,end`;
       calendarsTasks.push(this.httpClient.get(destinationUrl).pipe(map(response => this.processEventsResponse(response))));
     });
-    forkJoin(calendarsTasks).pipe(defaultIfEmpty(null)).subscribe(() => this.updated.next());
+    forkJoin(calendarsTasks).pipe(defaultIfEmpty(null)).subscribe(() => this.updateEvents());
   }
 
   /**
@@ -156,6 +152,13 @@ export class ScheduleComponent implements OnInit {
   }
 
   /**
+   * Вызывает обновление отображаемого списка событий.
+   */
+  updateEvents() {
+    this.updated.next();
+  }
+
+  /**
    * Преобразовывает ответ с полученными событиями из Outlook в нужный формат и сохраняет их.
    * 
    * @param response - Ответ от Microsoft Graph с событиями из Outlook
@@ -163,7 +166,7 @@ export class ScheduleComponent implements OnInit {
   processEventsResponse(response) {
     const rawEvents: [] = response.value;
     rawEvents.forEach(rawEvent => {
-      const calendarEvent: CalendarEvent = this.getCalendarEventFromRawEvent(rawEvent);
+      const calendarEvent: CalendarEvent = ScheduleComponent.getCalendarEventFromOutlookRawEvent(rawEvent);
       this.events.push(calendarEvent);
     });
   }
@@ -174,7 +177,7 @@ export class ScheduleComponent implements OnInit {
    * @param rawEvent Ответ от Microsoft Graph с событием из Outlook
    * @returns Событие в календаре
    */
-  getCalendarEventFromRawEvent(rawEvent): CalendarEvent {
+  static getCalendarEventFromOutlookRawEvent(rawEvent): CalendarEvent {
     const calendarEvent: CalendarEvent = {
       id: rawEvent["id"],
       title: rawEvent['subject'],
@@ -183,6 +186,25 @@ export class ScheduleComponent implements OnInit {
       meta: {
         organizer: rawEvent['organizer']['emailAddress']['name'],
       },
+    };
+    return calendarEvent;
+  }
+
+  /**
+   * Преобразует socket событие и возвращает его в нужном формате.
+   * 
+   * @param socketEventNotification Socket событие
+   * @returns Событие в календаре
+   */
+  static getCalendarEventFromSocketNotification(socketEventNotification): CalendarEvent {
+    const calendarEvent: CalendarEvent = {
+      id: socketEventNotification["id"],
+      title: socketEventNotification["subject"],
+      start: new Date(socketEventNotification["start"] + 'Z'),
+      end: new Date(socketEventNotification["end"] + "Z"),
+      meta: {
+        organizer: socketEventNotification["organizer"],
+      }
     };
     return calendarEvent;
   }
@@ -200,7 +222,9 @@ export class ScheduleComponent implements OnInit {
    * @param calApiId ID календаря Outlook
    */
   joinRoomByCalendarId(calApiId: string) {
-    this.socket.emit("join_calendar_room", calApiId);
+    const data = {userId: this.msalService.instance.getActiveAccount().localAccountId, calApiId: calApiId};
+    this.socket.emit("join_calendar_room", JSON.stringify(data));
+
   }
 
     /**
@@ -227,17 +251,20 @@ export class ScheduleComponent implements OnInit {
    * @param response Ответ от Microsoft Graph с календарями Outlook
    */
   processCalendarsResponse(response) {
-    console.log(response);
     const rawCalendars: [] = response.value;
     this.calendarsList.length = 0;
-    for (let i = 0; i < response.value.length; i++) {
-      let calendarName: string = rawCalendars[i]['name'];
-      if (rawCalendars[i]['isDefaultCalendar'] == true) {
-        calendarName = "Собственный календарь";
+    let i = 0;
+    rawCalendars.forEach(rawCalendar => {
+      let calendarName: string = rawCalendar['name'];
+      if (calendarName != "Дни рождения") { // не обрабатываем календарь дней рождения, т.к. в нем наврядли содержится расписание переговорных
+        if (rawCalendar['isDefaultCalendar']) {
+          calendarName = "Собственный календарь";
+        }
+        const calendar = { cal_id: i, cal_name: calendarName, cal_api_id: rawCalendar['id'] };
+        this.calendarsList.push(calendar);
+        i++;
       }
-      const calendar = { cal_id: i, cal_name: calendarName, cal_api_id: rawCalendars[i]['id'] };
-      this.calendarsList.push(calendar);
-    }
+    });
     this.calendarDropdownElement.data = this.calendarsList;
   }
 
@@ -253,6 +280,19 @@ export class ScheduleComponent implements OnInit {
   }
 
   /**
+   * Метод, вызывающийся при одномоментном выборе всех календарей в списке.
+   */
+  onDropdownSelectAll() {
+    setTimeout(() => {
+      this.callEvents();
+      this.selectedCalendars.forEach(selectedCal => {
+        const calendarApiId = this.getSelectedCalendarApiId(selectedCal);
+        this.joinRoomByCalendarId(calendarApiId);
+      });
+    }, 100);
+  }
+
+  /**
    * Метод, вызывающийся при снятии выбора календаря в списке.
    * 
    * @param item Календарь, выбор которого был отменен
@@ -261,6 +301,19 @@ export class ScheduleComponent implements OnInit {
     this.callEvents();
     const calendarApiId = this.getSelectedCalendarApiId(item);
     this.leaveRoomByCalendarId(calendarApiId);
+  }
+
+  /**
+   * Метод, вызывающийся при одномоментном снятии выбора со всех календарей в списке.
+   */
+  onDropdownDeselectAll() {
+    setTimeout(() => {
+      this.callEvents();
+      this.calendarsList.forEach(calendar => {
+        const calendarApiId = calendar['cal_api_id'];
+        this.leaveRoomByCalendarId(calendarApiId);
+      });
+    }, 100);
   }
 
   /**

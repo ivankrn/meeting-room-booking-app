@@ -22,7 +22,9 @@
               [data]="calendarsList"
               [(ngModel)]="selectedCalendars"
               (onSelect)="onDropdownSelect($event)"
+              (onSelectAll)="onDropdownSelectAll()"
               (onDeSelect)="onDropdownDeselect($event)"
+              (onDeSelectAll)="onDropdownDeselectAll()"
             >
             </ng-multiselect-dropdown>
             <button (click)="logout()" class="button-reset header__button">Выйти</button>

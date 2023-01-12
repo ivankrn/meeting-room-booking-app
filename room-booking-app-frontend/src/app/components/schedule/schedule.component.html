@@ -7,13 +7,13 @@
             <span class="burger__line"></span>
         </button>
         <nav class="header__nav flex">
-            <button (click)="setView('day')"
+            <button (click)="setView('day');changeColor($event)"
             mwlCalendarToday
             [(viewDate)]="viewDate" class="button-reset header__button">
             Сегодня
             </button>
-            <button (click)="setView('week')" class="button-reset header__button">Неделя</button>
-            <button (click)="setView('month')" class="button-reset header__button">Месяц</button>
+            <button (click)="setView('week');changeColor($event)" class="button-reset header__button btn-active">Неделя</button>
+            <button (click)="setView('month');changeColor($event)" class="button-reset header__button">Месяц</button>
             <button (click)="callEvents()" class="button-reset header__button">Обновить</button>
             <ng-multiselect-dropdown class="calendar__dropdown"
               #calendarDropdown
@@ -25,10 +25,13 @@
               (onDeSelect)="onDropdownDeselect($event)"
             >
             </ng-multiselect-dropdown>
-            <button (click)="logout()" class="button-reset header__button">Выйти</button>
+            <button (click)="logout()" class="button-reset header__button logout-button">Выйти</button>
         </nav>
     </header>
     <main>
+        <span class="main__time">
+          {{ currentTime | date: "H:mm" }}
+        </span>
         <div class="container">
             <div class="main__title flex">
                 <button

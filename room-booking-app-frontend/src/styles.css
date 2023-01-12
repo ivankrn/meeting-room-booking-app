@@ -2,3 +2,24 @@
 body {
   margin: 0;
 }
+
+.dropdown-btn {
+  font-size: 36px;
+  border: none !important;
+}
+
+.dropdown-multiselect__caret {
+  display: none !important;
+}
+
+@media (max-width: 1600px) {
+  .dropdown-btn {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dropdown-btn {
+      font-size: 18px;
+  }
+}

@@ -31,6 +31,8 @@ export class ScheduleComponent implements OnInit {
    */
   viewDate: Date = new Date();
 
+  currentTime = Date.now();
+
   locale: string = "ru";
   weekStartsOn: number = DAYS_OF_WEEK.MONDAY;
   dayStartHour: number = 6;
@@ -47,7 +49,7 @@ export class ScheduleComponent implements OnInit {
   updated: Subject<void> = new Subject<void>();
   calendarsList = [];
   selectedCalendars = [];
-  dropdownSelectText = "Выберите переговорные";
+  dropdownSelectText = "Выбрать переговорную";
   dropdownSettings: IDropdownSettings = {
     singleSelection: false,
     idField: 'cal_id',
@@ -113,7 +115,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Меняет текущий временной диапазон календаря.
-   * 
+   *
    * @param view - Временной диапазон, который необходимо отобразить
    */
   setView(view: string) {
@@ -131,6 +133,18 @@ export class ScheduleComponent implements OnInit {
         break;
       }
     }
+  }
+
+  /**
+   * Меняет фон кнопки при выборе временного диапазона
+   * @param event - Кнопка
+   */
+  changeColor(event) {
+    const headerButtons = document.querySelectorAll('.header__button');
+    headerButtons.forEach((button) => {
+      button.classList.remove('btn-active');
+    })
+    event.target.classList.add('btn-active');
   }
 
   /**
@@ -157,7 +171,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Преобразовывает ответ с полученными событиями из Outlook в нужный формат и сохраняет их.
-   * 
+   *
    * @param response - Ответ от Microsoft Graph с событиями из Outlook
    */
   processEventsResponse(response) {
@@ -170,7 +184,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Преобразует ответ с полученным событием из Outlook и возвращает его в нужном формате.
-   * 
+   *
    * @param rawEvent Ответ от Microsoft Graph с событием из Outlook
    * @returns Событие в календаре
    */
@@ -196,7 +210,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Присоединяется к SocketIO комнате, соответствующей указанному ID календаря.
-   * 
+   *
    * @param calApiId ID календаря Outlook
    */
   joinRoomByCalendarId(calApiId: string) {
@@ -205,7 +219,7 @@ export class ScheduleComponent implements OnInit {
 
     /**
    * Отключается от SocketIO комнаты, соответствующей указанному ID календаря.
-   * 
+   *
    * @param calApiId ID календаря Outlook
    */
   leaveRoomByCalendarId(calApiId: string) {
@@ -223,7 +237,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Преобразует ответ с полученными календарями Outlook, после чего сохраняет их и обновляет список календарей для выбора.
-   * 
+   *
    * @param response Ответ от Microsoft Graph с календарями Outlook
    */
   processCalendarsResponse(response) {
@@ -243,7 +257,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Метод, вызывающийся при выборе календаря в списке.
-   * 
+   *
    * @param item Выбранный календарь
    */
   onDropdownSelect(item) {
@@ -254,7 +268,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Метод, вызывающийся при снятии выбора календаря в списке.
-   * 
+   *
    * @param item Календарь, выбор которого был отменен
    */
   onDropdownDeselect(item) {
@@ -265,7 +279,7 @@ export class ScheduleComponent implements OnInit {
 
   /**
    * Возвращает Outlook ID выбранного календаря.
-   * 
+   *
    * @param selectedCalendar Выбранный календарь
    * @returns ID календаря Outlook
    */

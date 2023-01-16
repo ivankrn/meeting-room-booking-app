@@ -38,6 +38,7 @@ public class GraphClientHelper {
     }
 
     public static GraphServiceClient<Request> getGraphClient(String accessToken) {
+//        Пример использования app-only авторизации
 //        ClientSecretCredential clientSecretCredential = new ClientSecretCredentialBuilder()
 //                .clientId(clientId)
 //                .tenantId(tenantId)

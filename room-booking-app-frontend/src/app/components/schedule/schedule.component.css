@@ -71,11 +71,21 @@ header {
 }
 
 .header__button {
-  font-weight: 250;
+  font-weight: 400;
   font-family: 'Muller';
   font-size: 36px;
   line-height: 36px;
   padding: 10px 25px;
+}
+
+.header__button:last-child {
+  margin-left: auto;
+  margin-right: 30px;
+}
+
+.logout-button {
+  background: #F5F8EF;
+  border-radius: 100px;
 }
 
 .burger {
@@ -99,10 +109,19 @@ header {
   height: 100vh;
 }
 
+.btn-active {
+  background: #F5F8EF;
+  border-radius: 100px;
+}
+
 .calendar__dropdown {
-  min-width: 250px; 
-  max-width: 500px; 
-  margin-right: 30px;
+  min-width: 250px;
+  max-width: 500px;
+}
+
+.dropdown-btn {
+  font-style: 36px !important;
+  border: none !important;
 }
 
 .header__nav--active {
@@ -137,15 +156,11 @@ header {
 
 .header__nav {
   flex-wrap: nowrap;
+  width: 100%;
 }
 
 .header__button:not(:last-child) {
   margin-right: 20px;
-}
-
-.header__button:focus {
-  background: #F5F8EF;
-  border-radius: 100px;
 }
 
 .header__time {
@@ -168,7 +183,7 @@ header {
   margin: 0;
   margin-left: 10px;
   margin-right: 10px;
-  font-size: 60px;
+  font-size: 50px;
   line-height: 60px;
 }
 
@@ -252,11 +267,11 @@ width: 282px;
 
 .main__time {
   font-weight: 400;
-  font-size: 64px;
+  font-size: 50px;
   line-height: 64px;
   position: absolute;
-  right: 10px;
-  top: 95px;
+  right: 55px;
+  top: 105px;
 }
 
 .scroll-table-body {

@@ -57,7 +57,11 @@ export class ScheduleComponent implements OnInit {
   @ViewChild('calendarDropdown')
   calendarDropdownElement;
 
-  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket) {
+  constructor(private httpClient: HttpClient, private msalService: MsalService, private socket: Socket, private cdr: ChangeDetectorRef) {
+    setInterval(() => {
+      this.currentTime = Date.now();
+      this.cdr.detectChanges();
+    }, 60 * 1000);
   }
 
   ngOnInit(): void {

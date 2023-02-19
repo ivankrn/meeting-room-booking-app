@@ -1,4 +1,6 @@
 # meeting-room-booking-app
+<img src="demo.png" width="945">
+
 Система для просмотра расписания переговорных комнат.
 ## Технологический стек
 - Java (Spring Boot)
